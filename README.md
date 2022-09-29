@@ -6,6 +6,4 @@ SampFuncs plugin for stealing password and http sending in the Grand Theft Auto 
 - Boost C++ library. <br>
 - Microsoft DirectX SDK (June 2010).
 
-## TODO
-* Edit readme <b>[-]</b>
-* Cleanup and optimization some code <b>[-]</b>
+Repository is not supported.
